@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  
+  <!-- Primary Meta Tags -->
+  <title>TaskFlow - Junior College Task Manager</title>
+  <meta name="title" content="TaskFlow - Junior College Task Manager">
+  <meta name="description" content="Stay organized with your junior college coursework. Track tasks, deadlines, and tutorials all in one place.">
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#facc15">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="TaskFlow">
+  <meta name="mobile-web-app-capable" content="yes">
+  
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icon-192.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="/icon-192.png">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/icon-192.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icon-192.png">
+  
+  <!-- Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React and ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel Standalone for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <style>
+    /* Prevent pull-to-refresh on mobile */
+    body {
+      overscroll-behavior-y: contain;
+    }
+    
+    /* Hide scrollbar but keep functionality */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
+    }
+    
+    /* Install prompt styling */
+    .install-prompt {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #facc15 0%, #f59e0b 100%);
+      color: white;
+      padding: 16px 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      animation: slideUp 0.3s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from {
+        transform: translateY(100px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    .install-prompt button {
+      background: white;
+      color: #f59e0b;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      margin-left: 12px;
+    }
+    
+    .install-prompt button:hover {
+      background: #fef3c7;
+    }
+    
+    .install-prompt .close-btn {
+      background: transparent;
+      color: white;
+      padding: 4px;
+      font-size: 20px;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <!-- Install Prompt -->
+  <div id="install-prompt" style="display: none;" class="install-prompt">
+    <div style="flex: 1;">
+      <div style="font-weight: 600; margin-bottom: 4px;">📱 Install TaskFlow</div>
+      <div style="font-size: 14px; opacity: 0.95;">Add to your home screen for quick access!</div>
+    </div>
+    <button id="install-btn">Install</button>
+    <button class="close-btn" id="close-install">×</button>
+  </div>
+
+  <script type="text/babel" src="/task-manager.jsx"></script>
+  
+  <script>
+    // PWA Install Prompt
+    let deferredPrompt;
+    const installPrompt = document.getElementById('install-prompt');
+    const installBtn = document.getElementById('install-btn');
+    const closeInstall = document.getElementById('close-install');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent the mini-infobar from appearing
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      deferredPrompt = e;
+      
+      // Show install prompt after 3 seconds if not already installed
+      setTimeout(() => {
+        if (!window.matchMedia('(display-mode: standalone)').matches) {
+          installPrompt.style.display = 'flex';
+        }
+      }, 3000);
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) {
+        return;
+      }
+      
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      console.log(`User response to install prompt: ${outcome}`);
+      deferredPrompt = null;
+      installPrompt.style.display = 'none';
+    });
+
+    closeInstall.addEventListener('click', () => {
+      installPrompt.style.display = 'none';
+    });
+
+    // Hide install prompt if already installed
+    window.addEventListener('appinstalled', () => {
+      installPrompt.style.display = 'none';
+      deferredPrompt = null;
+      console.log('TaskFlow was installed');
+    });
+
+    // Request notification permission
+    if ('Notification' in window && 'serviceWorker' in navigator) {
+      // Check if already granted
+      if (Notification.permission === 'default') {
+        // Ask for permission after user logs in (handled in the app)
+      }
+    }
+    
+    // Prevent pull-to-refresh on iOS
+    let startY = 0;
+    document.addEventListener('touchstart', (e) => {
+      startY = e.touches[0].pageY;
+    });
+
+    document.addEventListener('touchmove', (e) => {
+      const y = e.touches[0].pageY;
+      // Prevent pull-to-refresh when at the top of the page
+      if (y > startY && window.scrollY === 0) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+  </script>
+</body>
+</html>
